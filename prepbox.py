@@ -13,7 +13,7 @@ import json
 
 load_dotenv()  # Load environment variables from .env file
 
-# 1️1 Define shared state schema with Pydantic
+# 1 Define shared state schema with Pydantic
 class State(BaseModel):
     # This only accumulates messages like Human Ai and System
     messages: Annotated[List[BaseMessage], add_messages] = Field(default_factory=list)
@@ -60,7 +60,7 @@ builder = StateGraph(State)
 
 llm = ChatOpenAI(
     model_name="gpt-4o-mini",
-    temperature=0.7,
+    temperature=0.9,
     streaming=False
 )
 
@@ -113,10 +113,13 @@ def c(state: State) -> State:
 
     return state
 
+# need to make this a real prompt
+# need to make a mix of real and generated questions
 PLANNER_PROMPT = """
 You are a planner. You are given a list of questions that the student got conceptually wrong.
 Your job is to create a number of lessons of 10 questions each to address the conceptual mistakes by topic.
-Create 3 arrays of questions and answers that will help the student correct the conceptual mistakes.
+Each question should be worded differently and if appropriate be worded in a real word problem scenario.
+Create 3 arrays of questions and step by step answers that will help the student correct the conceptual mistakes.
 Think step by step and reason through the topics and questions to generate new questions that will help the student practice the topics they got wrong.
 """
 def d(state: State) -> State:
@@ -128,7 +131,7 @@ def d(state: State) -> State:
     state.messages.append(AIMessage(content=response.content))
     return state
 
-#--- Build the Graph
+#--- Build the Graph ---#
 builder.add_node("a", a)
 builder.add_node("b", b)
 builder.add_node("c", c)
@@ -153,7 +156,7 @@ graph = builder.compile()
 #--- Run in Terminal ---#
 def main():
     initial_state = {"messages": []}
-    previous_messages = set()  # Keep track of messages we've already printed
+    previous_messages = set()
 
     for chunk in graph.stream(
         initial_state,
