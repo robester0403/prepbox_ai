@@ -9,9 +9,11 @@ from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, System
 from src.prompts.system_message import SYSTEM_MESSAGE
 from src.prompts.question_classifer import QUESTION_CLASSIFIER_PROMPT
 
+import json
+
 load_dotenv()  # Load environment variables from .env file
 
-# 1️⃣ Define shared state schema with Pydantic
+# 1️1 Define shared state schema with Pydantic
 class State(BaseModel):
     # This only accumulates messages like Human Ai and System
     messages: Annotated[List[BaseMessage], add_messages] = Field(default_factory=list)
@@ -23,11 +25,12 @@ def print_last_message(state: State) -> None:
         print(state.messages[-1].content)
 
 def get_user_message() -> HumanMessage:
+    # can't get interrupt to work
     """Get user input and return it as a HumanMessage"""
     return HumanMessage(content=input("You: "))
 
 #--- Conditional Edge Functions ---#
-#this needs complete rework
+# this needs complete rework and we don't need it right now
 # def should_continue(state: State) -> str:
 #     """
 #     Use AI to determine if the conversation should continue based on the last message
@@ -93,28 +96,21 @@ def b(state: State) -> State:
 SPRINT_1_MATH_TOPIC = """
 For the given array of math questions, keep only the questions that are conceptually wrong.
 """
-import json
 
 def c(state: State) -> State:
     """
     For Sprint 1 we are mocking the response straight to the planner. Let's just get all the conceptual mistakes and send them to the planner.
     """
-    # #since we don't need LLM for this anymore replace with plain function
-    print("here it is")
+
     questions = json.loads(state.messages[-1].content)
     conceptual_mistakes = []
     for question in questions:
         if question["mistake_type"] == "conceptual_mistake":
             conceptual_mistakes.append(question)
 
-    print(conceptual_mistakes)
     stringified_mistakes = json.dumps(conceptual_mistakes)
     state.messages.append(AIMessage(content=stringified_mistakes))
 
-    # state.messages.append(HumanMessage(content="Please create an array of all the math topics the student got conceptually wrong."))
-    # state.messages.append(AIMessage(content=SPRINT_1_MATH_TOPIC))
-    # response = llm.invoke(state.messages)
-    # state.messages.append(AIMessage(content=response.content)
     return state
 
 PLANNER_PROMPT = """
